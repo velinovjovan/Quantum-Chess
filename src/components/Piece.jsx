@@ -3,7 +3,9 @@ import { memo } from "react";
 function Piece({ piece }) {
   return (
     <img
-      src={`${piece.type}-${piece.color === "w" ? "white" : "black"}.svg`}
+      src={`pieces/${piece.type}-${
+        piece.color === "w" ? "white" : "black"
+      }.svg`}
       alt={piece.type}
     />
   );

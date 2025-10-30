@@ -157,16 +157,16 @@ const CardNav = ({
             <div className="hamburger-line" />
           </div>
 
-          {/* <div className="logo-container">
-            <img src={logo} alt={logoAlt} className="logo" />
-          </div> */}
+          <div className="logo-container">
+            <img src={logo} alt={logoAlt} className="h-[2rem] pt-[2px]" />
+          </div>
 
           <button
             type="button"
             className="card-nav-cta-button"
             style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
           >
-            Log In
+            Sign In
           </button>
         </div>
 
@@ -186,6 +186,7 @@ const CardNav = ({
                     className="nav-card-link"
                     href={lnk.href}
                     aria-label={lnk.ariaLabel}
+                    target="_blank"
                   >
                     <GoArrowUpRight
                       className="nav-card-link-icon"
