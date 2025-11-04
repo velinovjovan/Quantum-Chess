@@ -1,7 +1,10 @@
+import { handleSignIn } from "../assets/handleSignIn";
+
 function SignInButtons() {
   return (
     <div className="flex flex-col sm:flex-row justify-center gap-4 p-4 pointer-events-auto">
       <button
+        onClick={() => handleSignIn("google")}
         type="button"
         className="group relative overflow-hidden bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl px-6 py-3.5 text-sm transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:scale-105 border border-gray-200 flex items-center justify-center gap-3 min-w-[200px]"
       >
@@ -33,6 +36,7 @@ function SignInButtons() {
       </button>
 
       <button
+        onClick={() => handleSignIn("github")}
         type="button"
         className="group relative overflow-hidden bg-[#24292F] hover:bg-[#1a1e23] text-white font-semibold rounded-xl px-6 py-3.5 text-sm transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-3 min-w-[200px]"
       >

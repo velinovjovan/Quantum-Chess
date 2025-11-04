@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { GoArrowUpRight } from "react-icons/go";
-
+import { handleSignIn } from "../assets/handleSignIn";
 import "../CSS/CardNav.css";
 
 const CardNav = ({
@@ -163,6 +163,7 @@ const CardNav = ({
 
           <button
             type="button"
+            onClick={() => handleSignIn("google")}
             className="card-nav-cta-button"
             style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
           >
