@@ -4,7 +4,7 @@ export const handleSignIn = async (provider) => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: provider,
     options: {
-      redirectTo: `${window.location.origin}/account`,
+      redirectTo: `${window.location.origin}/dashboard`,
     },
   });
   if (error) console.error("Error signing in:", error.message);

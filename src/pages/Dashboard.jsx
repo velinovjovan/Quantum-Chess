@@ -22,19 +22,18 @@ function Dashboard() {
         hue={160}
         forceHoverState={isSearching}
       />
-
-      {/* Main Content */}
       <div className="absolute inset-0 flex items-center justify-center z-10">
         <div className="flex flex-col items-center gap-8">
-          <h1 className="text-5xl font-bold text-amber-900 tracking-tight">
+          <h1 className="text-3xl md:text-5xl font-bold text-amber-900 tracking-tight">
             Quantum Chess
           </h1>
 
           <button
             onClick={isSearching ? handleCancel : handleFindMatch}
             className={`
-              px-12 py-4 
-              text-lg font-semibold 
+              px-8 py-3
+              md:px-12 md:py-4
+              text-md md:text-lg font-semibold 
               rounded-full 
               transition-all duration-300 
               shadow-lg hover:shadow-2xl
@@ -49,16 +48,12 @@ function Dashboard() {
           </button>
         </div>
       </div>
-
-      {/* Account Icon */}
       <button
         onClick={() => setSidebarOpen(true)}
         className="absolute top-6 right-6 z-20 p-3 bg-amber-800 text-amber-50 rounded-full shadow-lg hover:bg-amber-900 transition-all hover:scale-110"
       >
         <User size={24} />
       </button>
-
-      {/* Sidebar */}
       <div
         className={`absolute top-0 right-0 h-full w-80 bg-amber-950 shadow-2xl z-30 transform transition-transform duration-300 ${
           sidebarOpen ? "translate-x-0" : "translate-x-full"
