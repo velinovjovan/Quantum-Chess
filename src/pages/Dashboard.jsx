@@ -1,15 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Squares from "../components/backgrounds/Squares";
 import { User, Clock, Users } from "lucide-react";
 import { supabase } from "../assets/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import ProfileCard from "../components/ProfileCard";
+import { formatTime } from "../assets/formatTime";
 
 function Dashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
+  const [userId, setUserId] = useState(null);
+
   const navigate = useNavigate();
+  const hasNavigated = useRef(false);
+  const searchInterval = useRef(null);
+  const pollInterval = useRef(null);
 
   useEffect(() => {
     async function checkUser() {
@@ -17,46 +23,93 @@ function Dashboard() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) navigate("/");
+      if (!user) {
+        navigate("/");
+      } else {
+        setUserId(user.id);
+      }
     }
 
     checkUser();
   }, [navigate]);
 
   useEffect(() => {
-    let interval;
-    if (isSearching) {
-      interval = setInterval(() => {
-        setSearchTime((prev) => prev + 1);
-      }, 1000);
-    } else {
+    if (!isSearching) {
       setSearchTime(0);
-    }
-    return () => clearInterval(interval);
-  }, [isSearching]);
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Error signing out:", error.message);
+      clearInterval(searchInterval.current);
       return;
     }
+
+    searchInterval.current = setInterval(() => {
+      setSearchTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(searchInterval.current);
+  }, [isSearching]);
+
+  const handleFindMatch = async () => {
+    if (!userId || isSearching) return;
+
+    setIsSearching(true);
+    hasNavigated.current = false;
+    const startedAt = new Date().toISOString();
+
+    const { data: matchId, error } = await supabase.rpc("find_match", {
+      p_user_id: userId,
+    });
+
+    if (error) {
+      console.error("Matchmaking error:", error.message);
+      setIsSearching(false);
+      return;
+    }
+
+    if (matchId && !hasNavigated.current) {
+      hasNavigated.current = true;
+      setIsSearching(false);
+      navigate(`/match/${matchId}`);
+      return;
+    }
+
+    pollInterval.current = setInterval(async () => {
+      if (hasNavigated.current) return;
+
+      const { data } = await supabase
+        .from("matches")
+        .select("id")
+        .or(`white_player.eq.${userId},black_player.eq.${userId}`)
+        .gte("created_at", startedAt)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.id) {
+        hasNavigated.current = true;
+        setIsSearching(false);
+        clearInterval(pollInterval.current);
+        navigate(`/match/${data.id}`);
+      }
+    }, 2500);
+  };
+
+  const handleCancel = async () => {
+    setIsSearching(false);
+    hasNavigated.current = false;
+
+    if (pollInterval.current) {
+      clearInterval(pollInterval.current);
+      pollInterval.current = null;
+    }
+
+    if (!userId) return;
+
+    await supabase.from("matchmaking_queue").delete().eq("user_id", userId);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
     setSidebarOpen(false);
     navigate("/");
-  };
-
-  const handleFindMatch = () => {
-    setIsSearching(true);
-  };
-
-  const handleCancel = () => {
-    setIsSearching(false);
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
