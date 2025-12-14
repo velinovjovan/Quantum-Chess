@@ -13,7 +13,7 @@ function HomeScreen() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (user) navigate("/account");
+      if (user) navigate("/dashboard");
     }
 
     checkUser();
@@ -26,7 +26,7 @@ function HomeScreen() {
         squareSize={40}
         direction="down"
         borderColor="#fff"
-        hoverFillColor="#874000"
+        hoverFillColor="#111"
         className="absolute inset-0 h-full w-full z-0"
       />
       <LandingContent />

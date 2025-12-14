@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
 import { useRef, useState } from "react";
-import Board from "../components/Board";
+import Board from "../components/chess/Board";
 
 const board = [
   "a8",

@@ -27,14 +27,14 @@ const items = [
     textColor: "black",
     links: [
       {
-        label: "KnowIt",
-        ariaLabel: "KnowIt Project",
-        href: "https://knowitquiz.vercel.app",
-      },
-      {
         label: "TurboFPL",
         ariaLabel: "TurboFPL Project",
         href: "https://turbo-fpl.vercel.app",
+      },
+      {
+        label: "KnowIt",
+        ariaLabel: "KnowIt Project",
+        href: "https://knowitquiz.vercel.app",
       },
       {
         label: "BrainSwift",
