@@ -1,7 +1,7 @@
 import { Routes, Route, BrowserRouter } from "react-router-dom";
-import ChessScreen from "./pages/ChessScreen";
 import HomeScreen from "./pages/HomeScreen";
 import Dashboard from "./pages/Dashboard";
+import Match from "./pages/Match";
 
 function App() {
   return (
@@ -10,7 +10,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/chess" element={<ChessScreen />} />
+          <Route path="/match" element={<Match />} />
+          <Route path="/match/:id" element={<Match />} />
         </Routes>
       </BrowserRouter>
     </div>

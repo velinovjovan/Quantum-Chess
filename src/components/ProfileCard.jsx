@@ -88,6 +88,8 @@ function ProfileCard({ sidebarOpen, setSidebarOpen, handleSignOut }) {
                     src={profile.avatar_url}
                     alt="avatar"
                     className="w-20 h-20 rounded-2xl object-cover shadow-lg"
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <div className="w-20 h-20 bg-gradient-to-br from-[#F4E9CD] to-[#F4E9CD]/70 rounded-2xl flex items-center justify-center shadow-lg">

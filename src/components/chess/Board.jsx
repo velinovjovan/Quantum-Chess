@@ -10,19 +10,34 @@ function Board({ board, pieces, chess, onPieceDrop }) {
     (move) => move.match(/[a-h][1-8]/g)?.pop() || ""
   );
 
-  const handleOnClick = (square) => {
+  const handleOnClick = async (square) => {
     if (from === "") {
       setFrom(square);
       setPossible(chess.moves({ square }));
-    } else {
-      onPieceDrop(from, square);
+      return;
+    }
+
+    let success = false;
+
+    try {
+      success = await onPieceDrop(from, square);
+    } catch (err) {
+      success = false;
+      console.log(err);
+    }
+
+    if (success) {
       setFrom("");
       setPossible([]);
+      return;
     }
+
+    setFrom("");
+    setPossible([]);
   };
 
   return (
-    <div className="w-[50rem] mx-auto mt-16 grid grid-cols-8 grid-rows-8">
+    <div className="w-full max-w-[540px] md:max-w-[650px] lg:max-w-[700px] aspect-square grid grid-cols-8 grid-rows-8 shadow-2xl">
       {board.map((square, index) => (
         <Square
           square={square}

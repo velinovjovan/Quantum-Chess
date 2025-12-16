@@ -1,21 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Squares from "../components/backgrounds/Squares";
 import { User, Clock, Users } from "lucide-react";
 import { supabase } from "../assets/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import ProfileCard from "../components/ProfileCard";
-import { formatTime } from "../assets/formatTime";
 
 function Dashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
   const [userId, setUserId] = useState(null);
-
   const navigate = useNavigate();
-  const hasNavigated = useRef(false);
-  const searchInterval = useRef(null);
-  const pollInterval = useRef(null);
 
   useEffect(() => {
     async function checkUser() {
@@ -33,26 +28,78 @@ function Dashboard() {
     checkUser();
   }, [navigate]);
 
+  //search timer
   useEffect(() => {
-    if (!isSearching) {
+    let interval;
+    if (isSearching) {
+      interval = setInterval(() => {
+        setSearchTime((prev) => prev + 1);
+      }, 1000);
+    } else {
       setSearchTime(0);
-      clearInterval(searchInterval.current);
-      return;
     }
-
-    searchInterval.current = setInterval(() => {
-      setSearchTime((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(searchInterval.current);
+    return () => clearInterval(interval);
   }, [isSearching]);
 
-  const handleFindMatch = async () => {
-    if (!userId || isSearching) return;
+  // Bot match after 15 seconds
+  useEffect(() => {
+    if (!isSearching || searchTime < 15) return;
 
+    const matchWithBot = async () => {
+      setIsSearching(false);
+
+      // Cancel queue entry
+      await supabase.from("matchmaking_queue").delete().eq("user_id", userId);
+
+      // Navigate to local bot match
+      navigate("/match");
+    };
+
+    matchWithBot();
+  }, [isSearching, searchTime, userId, navigate]);
+
+  // realtime match listener
+  useEffect(() => {
+    if (!isSearching || !userId) return;
+
+    const channel = supabase
+      .channel("matchmaking-listener")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "matches",
+          filter: `white_player=eq.${userId}`,
+        },
+        (payload) => {
+          setIsSearching(false);
+          navigate(`/match/${payload.new.id}`);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "matches",
+          filter: `black_player=eq.${userId}`,
+        },
+        (payload) => {
+          setIsSearching(false);
+          navigate(`/match/${payload.new.id}`);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isSearching, userId, navigate]);
+
+  // MATCH FIND
+  const handleFindMatch = async () => {
     setIsSearching(true);
-    hasNavigated.current = false;
-    const startedAt = new Date().toISOString();
 
     const { data: matchId, error } = await supabase.rpc("find_match", {
       p_user_id: userId,
@@ -64,44 +111,17 @@ function Dashboard() {
       return;
     }
 
-    if (matchId && !hasNavigated.current) {
-      hasNavigated.current = true;
+    // If matched immediately
+    if (matchId) {
       setIsSearching(false);
       navigate(`/match/${matchId}`);
-      return;
     }
-
-    pollInterval.current = setInterval(async () => {
-      if (hasNavigated.current) return;
-
-      const { data } = await supabase
-        .from("matches")
-        .select("id")
-        .or(`white_player.eq.${userId},black_player.eq.${userId}`)
-        .gte("created_at", startedAt)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data?.id) {
-        hasNavigated.current = true;
-        setIsSearching(false);
-        clearInterval(pollInterval.current);
-        navigate(`/match/${data.id}`);
-      }
-    }, 2500);
+    // else → user stays in queue and waits via realtime listener
   };
 
+  // cancel matchmaking
   const handleCancel = async () => {
     setIsSearching(false);
-    hasNavigated.current = false;
-
-    if (pollInterval.current) {
-      clearInterval(pollInterval.current);
-      pollInterval.current = null;
-    }
-
-    if (!userId) return;
 
     await supabase.from("matchmaking_queue").delete().eq("user_id", userId);
   };
@@ -110,6 +130,12 @@ function Dashboard() {
     await supabase.auth.signOut();
     setSidebarOpen(false);
     navigate("/");
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
