@@ -1,13 +1,13 @@
-import { Chess } from "chess.js";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../assets/supabaseClient";
 import Board from "../components/chess/Board";
 import PlayerCard from "../components/PlayerCard";
 import MoveHistory from "../components/MoveHistory";
 import GameOverModal from "../components/GameOverModal";
-import { blackBoardSquares, boardSquares } from "../assets/boardSquares";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Clock } from "lucide-react";
+import { Chess } from "chess.js";
+import { supabase } from "../assets/supabaseClient";
+import { blackBoardSquares, boardSquares } from "../assets/boardSquares";
 import { formatTime } from "../assets/formatTime";
 import { botPlayer } from "../assets/botPlayer";
 
@@ -84,7 +84,6 @@ function Match() {
     });
   }, []);
 
-  // Bot match setup
   useEffect(() => {
     if (!isBotMatch || !userId) return;
 
@@ -119,7 +118,6 @@ function Match() {
     return () => clearTimeout(timeout);
   }, [isBotMatch, chess, syncBoard, boardPieces]);
 
-  // Match timer
   useEffect(() => {
     if (!timerActive) return;
 
@@ -130,7 +128,6 @@ function Match() {
     return () => clearInterval(interval);
   }, [timerActive]);
 
-  // Detect game over right after a move is recorded
   useEffect(() => {
     if (gameEndProcessedRef.current) return;
     if (!chess.isGameOver()) return;
@@ -146,7 +143,6 @@ function Match() {
     setGameOver(true);
     setTimerActive(false);
 
-    // Stop realtime subscription to avoid extra traffic/errors
     if (channelRef.current) {
       try {
         supabase.removeChannel(channelRef.current);
@@ -157,7 +153,6 @@ function Match() {
     }
   }, [moveHistory.length, chess]);
 
-  // Update ratings once, after UI reflects game over
   useEffect(() => {
     if (!gameOver || ratingsUpdatedRef.current) return;
     if (!winner || !userId) return;
@@ -294,7 +289,6 @@ function Match() {
       )
       .subscribe();
 
-    // Keep a reference so we can close when game ends
     channelRef.current = channel;
 
     return () => {

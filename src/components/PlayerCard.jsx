@@ -35,6 +35,4 @@ const PlayerCard = memo(({ player, isActiveTurn }) => {
   );
 });
 
-PlayerCard.displayName = "PlayerCard";
-
 export default PlayerCard;

@@ -3,6 +3,7 @@ import Squares from "../components/backgrounds/Squares";
 import { User, Clock, Users } from "lucide-react";
 import { supabase } from "../assets/supabaseClient";
 import { useNavigate } from "react-router-dom";
+import { matchWithBot } from "../assets/matchWithBot";
 import ProfileCard from "../components/ProfileCard";
 
 function Dashboard() {
@@ -28,7 +29,6 @@ function Dashboard() {
     checkUser();
   }, [navigate]);
 
-  //search timer
   useEffect(() => {
     let interval;
     if (isSearching) {
@@ -41,24 +41,11 @@ function Dashboard() {
     return () => clearInterval(interval);
   }, [isSearching]);
 
-  // Bot match after 15 seconds
   useEffect(() => {
     if (!isSearching || searchTime < 15) return;
-
-    const matchWithBot = async () => {
-      setIsSearching(false);
-
-      // Cancel queue entry
-      await supabase.from("matchmaking_queue").delete().eq("user_id", userId);
-
-      // Navigate to local bot match
-      navigate("/match");
-    };
-
-    matchWithBot();
+    else matchWithBot(setIsSearching, supabase, userId, navigate);
   }, [isSearching, searchTime, userId, navigate]);
 
-  // realtime match listener
   useEffect(() => {
     if (!isSearching || !userId) return;
 
@@ -97,7 +84,6 @@ function Dashboard() {
     };
   }, [isSearching, userId, navigate]);
 
-  // MATCH FIND
   const handleFindMatch = async () => {
     setIsSearching(true);
 
@@ -111,18 +97,14 @@ function Dashboard() {
       return;
     }
 
-    // If matched immediately
     if (matchId) {
       setIsSearching(false);
       navigate(`/match/${matchId}`);
     }
-    // else → user stays in queue and waits via realtime listener
   };
 
-  // cancel matchmaking
   const handleCancel = async () => {
     setIsSearching(false);
-
     await supabase.from("matchmaking_queue").delete().eq("user_id", userId);
   };
 
