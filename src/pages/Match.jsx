@@ -1,26 +1,24 @@
-import Board from "../components/chess/Board";
-import PlayerCard from "../components/PlayerCard";
-import MoveHistory from "../components/MoveHistory";
-import GameOverModal from "../components/GameOverModal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Clock } from "lucide-react";
 import { Chess } from "chess.js";
-import { supabase } from "../assets/supabaseClient";
 import { blackBoardSquares, boardSquares } from "../assets/boardSquares";
+import { supabase } from "../assets/supabaseClient";
 import { formatTime } from "../assets/formatTime";
 import { botPlayer } from "../assets/botPlayer";
+import Board from "../components/chess/Board";
+import PlayerCard from "../components/PlayerCard";
+import MoveHistory from "../components/MoveHistory";
+import GameOverModal from "../components/GameOverModal";
 
 function Match() {
   const { id: matchId } = useParams();
   const navigate = useNavigate();
-
   const chessRef = useRef(new Chess());
   const chess = chessRef.current;
   const gameEndProcessedRef = useRef(false);
   const channelRef = useRef(null);
   const ratingsUpdatedRef = useRef(false);
-
   const [boardPieces, setBoardPieces] = useState(() =>
     boardSquares.map((square) => chess.get(square))
   );
@@ -163,7 +161,7 @@ function Match() {
       try {
         if (isBotMatch) {
           const playerWon = result === playerColor;
-          const ratingChange = playerWon ? 30 : -20;
+          const ratingChange = playerWon ? 5 : -10;
           const currentRating = whitePlayer?.rating ?? 1200;
           const newRating = Math.max(100, currentRating + ratingChange);
           await supabase
@@ -179,8 +177,8 @@ function Match() {
               .update({
                 rating:
                   whitePlayer?.id === winnerId
-                    ? (whitePlayer?.rating ?? 1200) + 30
-                    : (blackPlayer?.rating ?? 1200) + 30,
+                    ? (whitePlayer?.rating ?? 1200) + 20
+                    : (blackPlayer?.rating ?? 1200) + 20,
               })
               .eq("id", winnerId);
 
@@ -189,10 +187,15 @@ function Match() {
               .update({
                 rating:
                   whitePlayer?.id === loserId
-                    ? Math.max(100, (whitePlayer?.rating ?? 1200) - 20)
-                    : Math.max(100, (blackPlayer?.rating ?? 1200) - 20),
+                    ? Math.max(100, (whitePlayer?.rating ?? 1200) - 15)
+                    : Math.max(100, (blackPlayer?.rating ?? 1200) - 15),
               })
               .eq("id", loserId);
+
+            await supabase
+              .from("matches")
+              .update({ status: "done", winner: winnerId })
+              .eq("id", matchId);
           }
         }
       } catch (err) {

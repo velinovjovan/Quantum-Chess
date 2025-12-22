@@ -16,7 +16,7 @@ function LandingContent() {
         ease="power3.out"
         className="pointer-events-auto"
       />
-      <p className="m-[7vw] max-w-[900px] font-mono text-[clamp(14px,4vw,32px)] whitespace-normal break-keep overflow-wrap-normal">
+      <p className="m-[7vw] max-w-[900px] font-mono text-[clamp(14px,4vw,32px)] whitespace-normal break-keep overflow-wrap-normal mx-[-1rem]">
         Dive into the world of quantum chess. Play online, master quantum
         principles, and experience how every move can shape countless possible
         outcomes.
