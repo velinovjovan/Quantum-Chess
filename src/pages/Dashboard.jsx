@@ -6,7 +6,7 @@ import { formatTime } from "../assets/formatTime";
 import { matchWithBot } from "../assets/matchWithBot";
 import Squares from "../components/backgrounds/Squares";
 import ProfileCard from "../components/ProfileCard";
-import TopRow from "../components/topRow";
+import TopRow from "../components/TopRow";
 import PlayHero from "../components/PlayHero";
 import SearchButton from "../components/SearchButton";
 import SpaceToPlay from "../components/SpaceToPlay";
