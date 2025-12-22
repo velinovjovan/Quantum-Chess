@@ -1,3 +1,5 @@
+import { Trophy } from "lucide-react";
+
 function Achievement() {
   return (
     <div className="flex items-center gap-3">
