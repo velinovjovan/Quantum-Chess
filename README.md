@@ -1,16 +1,35 @@
-# React + Vite
+# Quantum Chess ♟️
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Quantum Chess** is a real-time multiplayer chess platform with a modern UI and live synchronization. Built for speed and interactivity, it allows players to compete online with instant move updates, game state validation, and persistent match data.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Features
 
-## React Compiler
+- **Landing Page** – Clean introduction with quick access to play and matchmaking.
+- **Real-Time Multiplayer** – Two players compete live with moves synced instantly using Supabase Realtime.
+- **Matchmaking & Game Rooms** – Each game runs under a unique match ID, enabling direct URL-based access (`/match/:id`).
+- **Chess Engine Integration** – Powered by `chess.js` for move validation, legal move generation, and game-end detection (checkmate, draw, stalemate).
+- **Persistent Game State** – All moves are stored in the database, allowing reconnections and state recovery.
+- **Responsive UI** – Smooth and minimal chessboard UI optimized for desktop and mobile.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## ⚙️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Frontend:** [Vite](https://vitejs.dev/) + [React](https://react.dev/) + JavaScript
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Backend / Realtime:** [Supabase](https://supabase.com/) (PostgreSQL + Realtime subscriptions)
+- **Chess Logic:** [`chess.js`](https://github.com/jhlywa/chess.js)
+
+---
+
+## 📊 Future Plans
+
+- ⚛️ Add "quantum" mechanics (probabilistic or alternate-state moves)
+- ♟️ Spectator mode for live games
+- 🕒 Match timers and time controls
+- 🏆 Player ratings and match history
+- 💬 In-game chat per match
+
+---
