@@ -2,12 +2,12 @@ import { memo } from "react";
 
 const MoveHistory = memo(({ moves }) => {
   return (
-    <div className="bg-black border-2 border-[#F4E9CD] rounded-lg p-4 lg:order-3 order-3 max-h-[600px] overflow-y-auto">
+    <div className="bg-black border-2 border-[#F4E9CD] rounded-lg p-4 flex flex-col h-full min-h-0">
       <h3 className="text-[#F4E9CD] font-bold text-lg mb-4 flex items-center gap-2">
         <span>MOVE HISTORY</span>
         <span className="text-sm text-[#F4E9CD]/70">({moves.length})</span>
       </h3>
-      <div className="space-y-2 overflow-y-auto max-h-[520px] pr-2">
+      <div className="space-y-2 overflow-y-auto flex-1 min-h-0 pr-2">
         {moves.length === 0 ? (
           <p className="text-[#F4E9CD]/50 text-sm text-center py-8">
             No moves yet

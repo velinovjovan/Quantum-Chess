@@ -1,8 +1,20 @@
 import { useState } from "react";
 import Piece from "./Piece";
 import Square from "./Square";
+import { onPieceDrop } from "../../assets/onPieceDrop";
 
-function Board({ board, pieces, chess, onPieceDrop }) {
+function Board({
+  board,
+  pieces,
+  chess,
+  playerColor,
+  isBotMatch,
+  matchId,
+  userId,
+  syncBoard,
+  setMoveHistory,
+  supabase,
+}) {
   const [from, setFrom] = useState("");
   const [possible, setPossible] = useState([]);
 
@@ -12,6 +24,15 @@ function Board({ board, pieces, chess, onPieceDrop }) {
 
   const handleOnClick = async (square) => {
     if (from === "") {
+      const piece = chess.get(square);
+      const isPlayersTurn = playerColor ? chess.turn() === playerColor : false;
+      const isSelectable =
+        !!piece && playerColor && piece.color === playerColor && isPlayersTurn;
+      if (!isSelectable) {
+        setFrom("");
+        setPossible([]);
+        return;
+      }
       setFrom(square);
       setPossible(chess.moves({ square }));
       return;
@@ -20,7 +41,18 @@ function Board({ board, pieces, chess, onPieceDrop }) {
     let success = false;
 
     try {
-      success = await onPieceDrop(from, square);
+      success = await onPieceDrop(
+        from,
+        square,
+        isBotMatch,
+        chess,
+        matchId,
+        userId,
+        playerColor,
+        syncBoard,
+        setMoveHistory,
+        supabase
+      );
     } catch (err) {
       success = false;
       console.log(err);

@@ -1,6 +1,6 @@
 import { Trophy, Home } from "lucide-react";
 
-const GameOverModal = ({ winner, playerColor, onNavigate }) => {
+const GameOverModal = ({ winner, playerColor, onNavigate, isBotMatch }) => {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
       <div className="bg-black border-4 border-[#F4E9CD] rounded-2xl p-12 text-center max-w-md">
@@ -14,11 +14,17 @@ const GameOverModal = ({ winner, playerColor, onNavigate }) => {
               <p className="text-[#F4E9CD]/70 text-lg mb-4">
                 {winner === playerColor ? (
                   <>
-                    <span className="text-green-400 font-bold">+30</span> rating
+                    <span className="text-green-400 font-bold">
+                      {isBotMatch ? "+5" : "+20"}
+                    </span>{" "}
+                    rating
                   </>
                 ) : (
                   <>
-                    <span className="text-red-400 font-bold">-20</span> rating
+                    <span className="text-red-400 font-bold">
+                      {isBotMatch ? "-10" : "-15"}
+                    </span>{" "}
+                    rating
                   </>
                 )}
               </p>

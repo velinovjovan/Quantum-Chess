@@ -1,37 +1,46 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Clock } from "lucide-react";
 import { Chess } from "chess.js";
 import { blackBoardSquares, boardSquares } from "../assets/boardSquares";
 import { supabase } from "../assets/supabaseClient";
 import { formatTime } from "../assets/formatTime";
 import { botPlayer } from "../assets/botPlayer";
+import { onPieceDrop } from "../assets/onPieceDrop";
 import Board from "../components/chess/Board";
 import PlayerCard from "../components/PlayerCard";
 import MoveHistory from "../components/MoveHistory";
 import GameOverModal from "../components/GameOverModal";
+import GameChat from "../components/GameChat";
 
 function Match() {
   const { id: matchId } = useParams();
+  const isBotMatch = !matchId;
   const navigate = useNavigate();
   const chessRef = useRef(new Chess());
   const chess = chessRef.current;
   const gameEndProcessedRef = useRef(false);
+  const timeLossProcessedRef = useRef(false);
   const channelRef = useRef(null);
   const ratingsUpdatedRef = useRef(false);
-  const [boardPieces, setBoardPieces] = useState(() =>
-    boardSquares.map((square) => chess.get(square))
-  );
   const [userId, setUserId] = useState(null);
   const [playerColor, setPlayerColor] = useState(null);
   const [whitePlayer, setWhitePlayer] = useState(null);
   const [blackPlayer, setBlackPlayer] = useState(null);
   const [moveHistory, setMoveHistory] = useState([]);
-  const [matchTime, setMatchTime] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
-  const [timerActive, setTimerActive] = useState(true);
-  const isBotMatch = !matchId;
+  // Server-authoritative match clock state
+  const [whiteTime, setWhiteTime] = useState(600);
+  const [blackTime, setBlackTime] = useState(600);
+  const [activeColorServer, setActiveColorServer] = useState(null); // 'w' | 'b'
+  const [clockStartedAt, setClockStartedAt] = useState(null); // ISO string
+  const [matchStatus, setMatchStatus] = useState(null);
+  const [matchWinnerId, setMatchWinnerId] = useState(null);
+  const [clockTick, setClockTick] = useState(0); // drives re-render while ticking
+  const matchMetaChannelRef = useRef(null);
+  const [boardPieces, setBoardPieces] = useState(() =>
+    boardSquares.map((square) => chess.get(square))
+  );
 
   const boardLayout = useMemo(
     () => (playerColor === "b" ? blackBoardSquares : boardSquares),
@@ -76,12 +85,20 @@ function Match() {
     [chess, syncBoard]
   );
 
+  //sync board on layout change
+  useEffect(() => {
+    syncBoard();
+  }, [boardLayout, syncBoard]);
+
+  //get userid
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null);
     });
+    window.scrollTo(0, 0);
   }, []);
 
+  //setup bot match
   useEffect(() => {
     if (!isBotMatch || !userId) return;
 
@@ -100,6 +117,7 @@ function Match() {
     setupBotMatch();
   }, [isBotMatch, userId]);
 
+  //bot match logic
   useEffect(() => {
     if (!isBotMatch || chess.turn() !== "b" || chess.isGameOver()) return;
 
@@ -116,15 +134,14 @@ function Match() {
     return () => clearTimeout(timeout);
   }, [isBotMatch, chess, syncBoard, boardPieces]);
 
+  // Drive local UI ticking for the active player's clock
   useEffect(() => {
-    if (!timerActive) return;
-
+    if (!matchId || gameOver || !activeColorServer || !clockStartedAt) return;
     const interval = setInterval(() => {
-      setMatchTime((prev) => prev + 1);
-    }, 1000);
-
+      setClockTick((t) => (t + 1) % 1000000);
+    }, 500);
     return () => clearInterval(interval);
-  }, [timerActive]);
+  }, [matchId, gameOver, activeColorServer, clockStartedAt]);
 
   useEffect(() => {
     if (gameEndProcessedRef.current) return;
@@ -139,7 +156,6 @@ function Match() {
       : null;
     setWinner(result);
     setGameOver(true);
-    setTimerActive(false);
 
     if (channelRef.current) {
       try {
@@ -221,7 +237,9 @@ function Match() {
     const fetchMatchAndPlayers = async () => {
       const { data: matchData, error: matchError } = await supabase
         .from("matches")
-        .select("white_player, black_player")
+        .select(
+          "white_player, black_player, white_time_seconds, black_time_seconds, active_color, clock_started_at, status, winner"
+        )
         .eq("id", matchId)
         .single();
 
@@ -252,6 +270,14 @@ function Match() {
         setPlayerColor(null);
       }
 
+      // Initialize server clock state
+      setWhiteTime(matchData.white_time_seconds ?? 600);
+      setBlackTime(matchData.black_time_seconds ?? 600);
+      setActiveColorServer(matchData.active_color ?? null);
+      setClockStartedAt(matchData.clock_started_at ?? null);
+      setMatchStatus(matchData.status ?? null);
+      setMatchWinnerId(matchData.winner ?? null);
+
       const { data: existingMoves, error: movesError } = await supabase
         .from("match_moves")
         .select("move")
@@ -268,10 +294,6 @@ function Match() {
 
     fetchMatchAndPlayers();
   }, [matchId, userId, applyMoves]);
-
-  useEffect(() => {
-    syncBoard();
-  }, [boardLayout, syncBoard]);
 
   useEffect(() => {
     if (!matchId) return;
@@ -300,59 +322,125 @@ function Match() {
     };
   }, [matchId, playerColor, handleMove]);
 
-  const onPieceDrop = async (from, to) => {
-    // Bot match logic
-    if (isBotMatch) {
-      if (chess.turn() !== "w") return false;
+  // Subscribe to match meta updates (clocks, status, winner)
+  useEffect(() => {
+    if (!matchId) return;
 
-      const move = chess.move({
-        from,
-        to,
-        promotion: "q",
-      });
+    const channel = supabase
+      .channel(`match_meta_${matchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "matches",
+          filter: `id=eq.${matchId}`,
+        },
+        (payload) => {
+          const m = payload.new;
+          setWhiteTime(m.white_time_seconds ?? 600);
+          setBlackTime(m.black_time_seconds ?? 600);
+          setActiveColorServer(m.active_color ?? null);
+          setClockStartedAt(m.clock_started_at ?? null);
+          setMatchStatus(m.status ?? null);
+          setMatchWinnerId(m.winner ?? null);
+        }
+      )
+      .subscribe();
 
-      if (!move) return false;
+    matchMetaChannelRef.current = channel;
+    return () => {
+      if (matchMetaChannelRef.current) {
+        supabase.removeChannel(matchMetaChannelRef.current);
+        matchMetaChannelRef.current = null;
+      }
+    };
+  }, [matchId]);
 
-      syncBoard();
-      setMoveHistory(chess.history({ verbose: true }));
-      return true;
+  // Reflect server-declared game over (e.g., timeout)
+  useEffect(() => {
+    if (!matchId) return;
+    if (gameEndProcessedRef.current) return;
+    if (matchStatus === "done" && matchWinnerId) {
+      gameEndProcessedRef.current = true;
+      setGameOver(true);
+      const winColor =
+        matchWinnerId === whitePlayer?.id
+          ? "w"
+          : matchWinnerId === blackPlayer?.id
+          ? "b"
+          : null;
+      setWinner(winColor);
     }
+  }, [matchId, matchStatus, matchWinnerId, whitePlayer, blackPlayer]);
 
-    // Online match logic
-    if (!matchId || !userId || !playerColor) return false;
-
-    if (chess.turn() !== playerColor) return false;
-
-    const piece = chess.get(from);
-    if (!piece || piece.color !== playerColor) return false;
-
-    const move = chess.move({
-      from,
-      to,
-      promotion: "q",
-    });
-
-    if (!move) return false;
-
-    chess.undo();
-
-    const { error } = await supabase.from("match_moves").insert({
-      match_id: matchId,
-      player_id: userId,
-      move: {
-        from: move.from,
-        to: move.to,
-        promotion: move.promotion,
-      },
-    });
-
-    if (error) {
-      console.error("Failed to send move", error);
-      return false;
+  // Compute display times based on server state
+  const whiteRemaining = useMemo(() => {
+    if (activeColorServer === "w" && clockStartedAt) {
+      const elapsed = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(clockStartedAt).getTime()) / 1000)
+      );
+      return Math.max(0, (whiteTime ?? 0) - elapsed);
     }
+    return whiteTime ?? 0;
+  }, [whiteTime, activeColorServer, clockStartedAt, clockTick]);
 
-    return true;
-  };
+  const blackRemaining = useMemo(() => {
+    if (activeColorServer === "b" && clockStartedAt) {
+      const elapsed = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(clockStartedAt).getTime()) / 1000)
+      );
+      return Math.max(0, (blackTime ?? 0) - elapsed);
+    }
+    return blackTime ?? 0;
+  }, [blackTime, activeColorServer, clockStartedAt, clockTick]);
+
+  // Client-side failsafe: if either clock hits zero, mark game over
+  useEffect(() => {
+    if (isBotMatch) return;
+    if (!matchId || gameOver) return;
+    if (timeLossProcessedRef.current) return;
+
+    const whiteFlag = whiteRemaining === 0;
+    const blackFlag = blackRemaining === 0;
+    if (!whiteFlag && !blackFlag) return;
+
+    timeLossProcessedRef.current = true;
+    const loserColor = whiteFlag ? "w" : "b";
+    const winnerColor = loserColor === "w" ? "b" : "w";
+    const winnerId = winnerColor === "w" ? whitePlayer?.id : blackPlayer?.id;
+
+    setGameOver(true);
+    setWinner(winnerColor);
+
+    if (winnerId) {
+      const updateTimeout = async () => {
+        try {
+          const { error } = await supabase
+            .from("matches")
+            .update({ status: "done", winner: winnerId })
+            .eq("id", matchId);
+
+          if (error) {
+            console.error("Failed to mark timeout", error);
+          }
+        } catch (err) {
+          console.error("Failed to mark timeout", err);
+        }
+      };
+      updateTimeout();
+    }
+  }, [
+    isBotMatch,
+    matchId,
+    gameOver,
+    whiteRemaining,
+    blackRemaining,
+    whitePlayer,
+    blackPlayer,
+  ]);
 
   return (
     <div className="min-h-screen w-screen bg-[#F4E9CD] flex items-center justify-center p-4">
@@ -361,28 +449,33 @@ function Match() {
           winner={winner}
           playerColor={playerColor}
           onNavigate={() => navigate("/dashboard")}
+          isBotMatch={isBotMatch}
         />
       )}
-      <div className="w-full max-w-[100rem] grid grid-cols-1 lg:grid-cols-[280px_auto_280px] gap-4 lg:gap-8 items-start">
-        <div className="space-y-4 lg:order-1 order-2">
+      <div className="w-full max-w-[100rem] grid grid-cols-1 lg:grid-cols-[300px_auto_300px] gap-4 lg:gap-8 items-start">
+        <div className="lg:order-1 order-2 flex flex-col gap-4 max-h-[44rem] h-full min-h-[32rem]">
           <PlayerCard
             player={playerColor === "w" ? blackPlayer : whitePlayer}
             isActiveTurn={chess.turn() === (playerColor === "w" ? "b" : "w")}
+            clockDisplay={
+              !isBotMatch
+                ? playerColor === "w"
+                  ? formatTime(blackRemaining)
+                  : formatTime(whiteRemaining)
+                : null
+            }
           />
-          <div className="bg-black border-2 border-[#F4E9CD] rounded-lg p-6 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Clock className="text-[#F4E9CD]" size={20} />
-              <span className="text-[#F4E9CD]/70 text-sm font-medium">
-                MATCH TIME
-              </span>
-            </div>
-            <div className="text-[#F4E9CD] text-4xl font-bold font-mono">
-              {formatTime(matchTime)}
-            </div>
-          </div>
+          <MoveHistory moves={moveHistory} />
           <PlayerCard
             player={playerColor === "w" ? whitePlayer : blackPlayer}
             isActiveTurn={chess.turn() === playerColor}
+            clockDisplay={
+              !isBotMatch
+                ? playerColor === "w"
+                  ? formatTime(whiteRemaining)
+                  : formatTime(blackRemaining)
+                : null
+            }
           />
         </div>
         <div className="flex items-center justify-center lg:order-2 order-1">
@@ -391,9 +484,18 @@ function Match() {
             pieces={boardPieces}
             chess={chess}
             onPieceDrop={onPieceDrop}
+            playerColor={playerColor}
+            isBotMatch={isBotMatch}
+            matchId={matchId}
+            userId={userId}
+            supabase={supabase}
+            syncBoard={syncBoard}
+            setMoveHistory={setMoveHistory}
           />
         </div>
-        <MoveHistory moves={moveHistory} />
+        <div className="lg:order-3 order-3">
+          <GameChat matchId={matchId} userId={userId} isBotMatch={isBotMatch} />
+        </div>
       </div>
     </div>
   );

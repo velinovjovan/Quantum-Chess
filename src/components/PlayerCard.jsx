@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import { User } from "lucide-react";
 
-const PlayerCard = memo(({ player, isActiveTurn }) => {
+const PlayerCard = memo(({ player, isActiveTurn, clockDisplay }) => {
   const [imageError, setImageError] = useState(false);
 
   return (
@@ -20,17 +20,25 @@ const PlayerCard = memo(({ player, isActiveTurn }) => {
           <User className="text-black" size={24} />
         )}
       </div>
-      <div className="flex-1">
-        <h3 className="text-[#F4E9CD] font-bold text-lg">
-          {player?.username || "Loading..."}
-        </h3>
-        <p className="text-[#F4E9CD]/70 text-sm">
-          Rating: {player?.rating || "—"}
-        </p>
+      <div className="flex-1 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-[#F4E9CD] font-bold text-md">
+            {player?.username || "Loading..."}
+          </h3>
+          <p className="text-[#F4E9CD]/70 text-sm">
+            Rating: {player?.rating || "—"}
+          </p>
+        </div>
+        {clockDisplay ? (
+          <span
+            className={`font-mono text-lg font-semibold ${
+              isActiveTurn ? "text-white" : "text-gray-400"
+            }`}
+          >
+            {clockDisplay}
+          </span>
+        ) : null}
       </div>
-      {isActiveTurn && (
-        <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
-      )}
     </div>
   );
 });
