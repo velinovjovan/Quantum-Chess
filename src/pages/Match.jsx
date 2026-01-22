@@ -39,12 +39,12 @@ function Match() {
   const [clockTick, setClockTick] = useState(0); // drives re-render while ticking
   const matchMetaChannelRef = useRef(null);
   const [boardPieces, setBoardPieces] = useState(() =>
-    boardSquares.map((square) => chess.get(square))
+    boardSquares.map((square) => chess.get(square)),
   );
 
   const boardLayout = useMemo(
     () => (playerColor === "b" ? blackBoardSquares : boardSquares),
-    [playerColor]
+    [playerColor],
   );
 
   const syncBoard = useCallback(() => {
@@ -66,7 +66,7 @@ function Match() {
       syncBoard();
       setMoveHistory(chess.history({ verbose: true }));
     },
-    [chess, syncBoard]
+    [chess, syncBoard],
   );
 
   const handleMove = useCallback(
@@ -82,7 +82,7 @@ function Match() {
         setMoveHistory(chess.history({ verbose: true }));
       }
     },
-    [chess, syncBoard]
+    [chess, syncBoard],
   );
 
   //sync board on layout change
@@ -238,7 +238,7 @@ function Match() {
       const { data: matchData, error: matchError } = await supabase
         .from("matches")
         .select(
-          "white_player, black_player, white_time_seconds, black_time_seconds, active_color, clock_started_at, status, winner"
+          "white_player, black_player, white_time_seconds, black_time_seconds, active_color, clock_started_at, status, winner",
         )
         .eq("id", matchId)
         .single();
@@ -310,7 +310,7 @@ function Match() {
         },
         (payload) => {
           handleMove(payload.new.move);
-        }
+        },
       )
       .subscribe();
 
@@ -344,7 +344,7 @@ function Match() {
           setClockStartedAt(m.clock_started_at ?? null);
           setMatchStatus(m.status ?? null);
           setMatchWinnerId(m.winner ?? null);
-        }
+        },
       )
       .subscribe();
 
@@ -368,8 +368,8 @@ function Match() {
         matchWinnerId === whitePlayer?.id
           ? "w"
           : matchWinnerId === blackPlayer?.id
-          ? "b"
-          : null;
+            ? "b"
+            : null;
       setWinner(winColor);
     }
   }, [matchId, matchStatus, matchWinnerId, whitePlayer, blackPlayer]);
@@ -379,7 +379,7 @@ function Match() {
     if (activeColorServer === "w" && clockStartedAt) {
       const elapsed = Math.max(
         0,
-        Math.floor((Date.now() - new Date(clockStartedAt).getTime()) / 1000)
+        Math.floor((Date.now() - new Date(clockStartedAt).getTime()) / 1000),
       );
       return Math.max(0, (whiteTime ?? 0) - elapsed);
     }
@@ -390,7 +390,7 @@ function Match() {
     if (activeColorServer === "b" && clockStartedAt) {
       const elapsed = Math.max(
         0,
-        Math.floor((Date.now() - new Date(clockStartedAt).getTime()) / 1000)
+        Math.floor((Date.now() - new Date(clockStartedAt).getTime()) / 1000),
       );
       return Math.max(0, (blackTime ?? 0) - elapsed);
     }

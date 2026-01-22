@@ -155,18 +155,6 @@ function Dashboard() {
             handleCancel={handleCancel}
             handleFindMatch={handleFindMatch}
           />
-          {/* {!isSearching && (
-            <div className="flex gap-6 mt-8">
-              <div className="bg-[#F4E9CD]/5 backdrop-blur-sm px-6 py-4 rounded-xl border border-[#F4E9CD]/10">
-                <p className="text-[#F4E9CD]/50 text-xs mb-1">Players Online</p>
-                <p className="text-[#F4E9CD] text-2xl font-bold">1,234</p>
-              </div>
-              <div className="bg-[#F4E9CD]/5 backdrop-blur-sm px-6 py-4 rounded-xl border border-[#F4E9CD]/10">
-                <p className="text-[#F4E9CD]/50 text-xs mb-1">Active Games</p>
-                <p className="text-[#F4E9CD] text-2xl font-bold">567</p>
-              </div>
-            </div>
-          )} */}
         </div>
       </div>
       <SpaceToPlay />
