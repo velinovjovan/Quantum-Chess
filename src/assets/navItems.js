@@ -7,7 +7,7 @@ const items = [
       {
         label: "Me",
         ariaLabel: "About Me",
-        href: "https://jovanvelinov.vercel.app",
+        href: "https://velinov.vercel.app",
       },
       {
         label: "Github Repo",
